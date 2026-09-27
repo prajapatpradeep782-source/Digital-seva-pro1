@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="hi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Seva Pro - Subscription</title>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+body{font-family:Arial;background:#f4f7fb;margin:0;color:#172033}.box{max-width:700px;margin:30px auto;background:white;padding:24px;border-radius:18px;box-shadow:0 5px 25px #0001}
+button{background:#2563eb;color:white;border:0;border-radius:10px;padding:13px 18px;font-weight:bold}.plan{border:1px solid #ddd;padding:18px;border-radius:14px;margin:12px 0}
+input{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:9px}
+</style></head>
+<body><div class="box">
+<h1>📱 Digital Seva Pro</h1>
+<p>30 दिन का premium subscription</p>
+<label>Mobile / User ID</label><input id="userId" placeholder="अपना mobile number">
+<div class="plan"><h2>₹99 / 30 Days</h2><button onclick="pay(99,'monthly')">Recharge ₹99</button></div>
+<div class="plan"><h2>₹199 / 30 Days Pro</h2><button onclick="pay(199,'pro')">Recharge ₹199</button></div>
+<div id="status"></div>
+</div>
+<script>
+const KEY_ID="YOUR_RAZORPAY_KEY_ID";
+async function pay(amount,plan){
+ const userId=document.getElementById("userId").value.trim();
+ if(!userId)return alert("Mobile / User ID भरें");
+ const r=await fetch("/api/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount,plan})});
+ const order=await r.json(); if(!order.id)return alert("Order नहीं बन पाया");
+ const options={
+  key:KEY_ID,amount:order.amount,currency:"INR",name:"Digital Seva Pro",
+  description:"30 Days Subscription",order_id:order.id,
+  prefill:{contact:userId},
+  handler:async function(resp){
+   const v=await fetch("/api/verify-payment",{method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({...resp,userId})});
+   const data=await v.json();
+   if(data.success){
+    document.getElementById("status").innerHTML="<h3>✅ Payment verified</h3><p>Subscription 30 दिन के लिए activate हो गया।</p>";
+   }else alert("Verification failed");
+  },
+  theme:{color:"#2563eb"}
+ };
+ new Razorpay(options).open();
+}
+</script></body></html>
